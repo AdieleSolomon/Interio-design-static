@@ -272,7 +272,7 @@ function renderVideos() {
     });
 }
 
-// Create a design card element with WhatsApp button
+// Create a design card element with WhatsApp button BELOW (no overlay)
 function createDesignCard(design, index) {
     const designCard = document.createElement('div');
     designCard.className = 'design-card';
@@ -281,7 +281,7 @@ function createDesignCard(design, index) {
     // Generate WhatsApp URL for this design
     const whatsappUrl = getWhatsAppUrl(getDesignInquiryMessage(design));
     
-    // Create image container with proper structure AND WhatsApp button
+    // Create image container - SIMPLIFIED - NO OVERLAY
     designCard.innerHTML = `
         <div class="design-img-container">
             <img src="${design.image}" 
@@ -289,14 +289,6 @@ function createDesignCard(design, index) {
                  class="design-img"
                  loading="lazy"
                  onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1615529328331-f8917597711f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'; this.alt='Image not available'">
-            <div class="design-overlay">
-                <a href="${whatsappUrl}" 
-                   class="design-whatsapp-btn" 
-                   target="_blank" 
-                   title="Inquire about this design on WhatsApp">
-                    <i class="fab fa-whatsapp"></i> Inquire Now
-                </a>
-            </div>
         </div>
         <div class="design-info">
             <h3>${design.title}</h3>
@@ -307,22 +299,17 @@ function createDesignCard(design, index) {
                class="btn design-quick-whatsapp" 
                target="_blank" 
                style="margin-top: 15px; background-color: #25D366; border: none; padding: 8px 15px; font-size: 0.9rem;">
-                <i class="fab fa-whatsapp"></i> WhatsApp Inquiry
+                <i class="fab fa-whatsapp"></i> Inquire on WhatsApp
             </a>
         </div>
     `;
     
-    // Add click event for image to open modal
-    designCard.querySelector('.design-img').addEventListener('click', (e) => {
-        e.stopPropagation();
-        openDesignModal(design);
-    });
-    
-    // Prevent WhatsApp button click from triggering modal
-    designCard.querySelectorAll('.design-whatsapp-btn, .design-quick-whatsapp').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
+    // Add click event for entire card to open modal
+    designCard.addEventListener('click', (e) => {
+        // Don't open modal if WhatsApp button was clicked
+        if (!e.target.closest('.design-quick-whatsapp')) {
+            openDesignModal(design);
+        }
     });
     
     return designCard;
