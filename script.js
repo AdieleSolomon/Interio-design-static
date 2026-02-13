@@ -54,6 +54,7 @@ function initializeModalElements() {
 const WHATSAPP_NUMBER = '+2348165262854';
 const BUSINESS_NAME = 'Pure Pleasure Building and Interior Concept';
 const BUSINESS_EMAIL = 'Abrahamuwaoma71@gmail.com';
+const FEATURED_VIDEO_URL = 'https://youtube.com/shorts/UiyfDfnk3iI';
 
 // State management
 let designs = [];
@@ -184,6 +185,7 @@ async function loadVideosData() {
         
         const data = await response.json();
         videos = data.videos || [];
+        ensureFeaturedVideo();
         
         // If no videos in JSON, use fallback
         if (videos.length === 0) {
@@ -197,6 +199,31 @@ async function loadVideosData() {
         // Use fallback videos
         loadFallbackVideos();
     }
+}
+
+function extractYouTubeVideoId(url) {
+    if (!url) return '';
+
+    const match = url.match(
+        /(?:youtu\.be\/|youtube\.com\/(?:shorts\/|embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?/]+)/
+    );
+    return match && match[1] ? match[1] : '';
+}
+
+function ensureFeaturedVideo() {
+    const featuredId = extractYouTubeVideoId(FEATURED_VIDEO_URL);
+    if (!featuredId) return;
+
+    const exists = videos.some((video) => extractYouTubeVideoId(video.url) === featuredId);
+    if (exists) return;
+
+    videos.unshift({
+        id: 'featured-short',
+        title: 'Featured Design Short',
+        url: FEATURED_VIDEO_URL,
+        description: 'Quick look at one of our latest interior design projects.',
+        date: 'Featured'
+    });
 }
 
 // Gallery Loading States
@@ -363,12 +390,10 @@ function createVideoCard(video, index) {
     videoCard.setAttribute('data-id', video.id || index + 1);
     
     // Extract YouTube video ID from URL
-    let videoId = '';
-    if (video.url) {
-        const match = video.url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
-        if (match && match[1]) {
-            videoId = match[1];
-        }
+    const videoId = extractYouTubeVideoId(video.url);
+    const isShort = !!(video.url && video.url.includes('/shorts/'));
+    if (isShort) {
+        videoCard.classList.add('is-short');
     }
     
     // Create video embed or placeholder
@@ -435,23 +460,23 @@ function loadFallbackDesigns() {
 function loadFallbackVideos() {
     videos = [
         {
-            id: 1,
-            title: "Interior Design Process",
-            url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-            description: "Watch how we transform spaces from concept to completion.",
-            date: "2024-01-15"
+            id: 'featured-short',
+            title: "Featured Design Short",
+            url: FEATURED_VIDEO_URL,
+            description: "Quick look at one of our latest interior design projects.",
+            date: "Featured"
         },
         {
             id: 2,
             title: "Modern Window Treatments",
-            url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
             description: "Learn about the latest window treatment solutions for modern homes.",
             date: "2024-01-15"
         },
         {
             id: 3,
             title: "Space Planning Techniques",
-            url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
             description: "Professional techniques for optimizing space in any room.",
             date: "2024-01-15"
         }
