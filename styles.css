@@ -458,6 +458,19 @@ nav {
     flex-direction: column;
 }
 
+.design-card-number {
+    display: inline-flex;
+    width: fit-content;
+    margin-bottom: 10px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--dark);
+    background: var(--accent);
+}
+
 .design-info h3 {
     margin-bottom: 10px;
     color: var(--accent);

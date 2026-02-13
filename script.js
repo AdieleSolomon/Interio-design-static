@@ -52,6 +52,7 @@ function initializeModalElements() {
 
 // WhatsApp Configuration - FIXED PHONE NUMBER
 const WHATSAPP_NUMBER = '+2348165262854';
+const WHATSAPP_NUMBER_DIGITS = WHATSAPP_NUMBER.replace(/\D/g, '');
 const BUSINESS_NAME = 'Pure Pleasure Building and Interior Concept';
 const BUSINESS_EMAIL = 'Abrahamuwaoma71@gmail.com';
 const FEATURED_VIDEO_URL = 'https://youtube.com/shorts/UiyfDfnk3iI';
@@ -101,6 +102,8 @@ function initializeLoadingElements() {
 
 // Initialize WhatsApp CTA Button in Footer
 function initWhatsAppCTA() {
+    if (document.querySelector('.whatsapp-cta')) return;
+
     const whatsappCTA = document.createElement('a');
     whatsappCTA.href = getWhatsAppUrl(`Hello ${BUSINESS_NAME}! I would like to inquire about your services.`);
     whatsappCTA.className = 'whatsapp-cta';
@@ -114,12 +117,34 @@ function initWhatsAppCTA() {
 
 // Function to generate WhatsApp URL
 function getWhatsAppUrl(message) {
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/${WHATSAPP_NUMBER_DIGITS}?text=${encodeURIComponent(message)}`;
 }
 
 // Function to get design inquiry message
 function getDesignInquiryMessage(design) {
-    return `Hello ${BUSINESS_NAME}!\n\nI'm interested in your "${design.title}" design.\n\nDesign Details:\n• Title: ${design.title}\n• Category: ${design.category || 'Interior Design'}\n\nPlease send me more information about this design, pricing details, and portfolio.`;
+    return `Hello ${BUSINESS_NAME}!\n\nI'm interested in design card #${design.cardNumber || 'N/A'}.\n\nDesign Details:\n- Card Number: #${design.cardNumber || 'N/A'}\n- Title: ${design.title}\n\nPlease send me more information about this design, pricing details, and portfolio.`;
+}
+
+function getChronologicalDesigns(designList) {
+    return [...designList]
+        .map((design, index) => ({
+            design,
+            index,
+            timestamp: design.date ? new Date(design.date).getTime() : Number.NaN
+        }))
+        .sort((a, b) => {
+            const aValid = Number.isFinite(a.timestamp);
+            const bValid = Number.isFinite(b.timestamp);
+
+            if (aValid && bValid) return a.timestamp - b.timestamp;
+            if (aValid) return -1;
+            if (bValid) return 1;
+            return a.index - b.index;
+        })
+        .map((item, index) => ({
+            ...item.design,
+            cardNumber: index + 1
+        }));
 }
 
 // Load all data from GitHub
@@ -304,7 +329,9 @@ function renderDesigns() {
     
     showGalleryContent();
     
-    designs.forEach((design, index) => {
+    const orderedDesigns = getChronologicalDesigns(designs);
+
+    orderedDesigns.forEach((design, index) => {
         const designCard = createDesignCard(design, index);
         galleryContainer.appendChild(designCard);
     });
@@ -351,10 +378,9 @@ function createDesignCard(design, index) {
                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1615529328331-f8917597711f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'; this.alt='Image not available'">
         </div>
         <div class="design-info">
+            <span class="design-card-number">Design #${design.cardNumber || index + 1}</span>
             <h3>${design.title}</h3>
             <p>${(design.description || '').substring(0, 100)}${design.description && design.description.length > 100 ? '...' : ''}</p>
-            ${design.category ? `<span class="design-category">${design.category}</span>` : ''}
-            ${design.date ? `<span class="design-date">${design.date}</span>` : ''}
             <a href="${whatsappUrl}" 
                 class="btn design-quick-whatsapp" 
                 target="_blank" 
@@ -491,8 +517,9 @@ function openDesignModal(design) {
         console.error('Modal elements not properly initialized');
         return;
     }
-    
-    modalTitle.textContent = design.title;
+
+    const designRef = `#${design.cardNumber || 'N/A'}`;
+    modalTitle.textContent = `Design ${designRef} - ${design.title}`;
     modalImage.src = design.image;
     modalImage.alt = design.title;
     modalDescription.textContent = design.description;
@@ -515,28 +542,17 @@ function openDesignModal(design) {
         whatsappLink.href = whatsappUrl;
         whatsappLink.target = '_blank';
         whatsappLink.rel = 'noopener noreferrer';
-        console.log('WhatsApp link set:', whatsappUrl);
-    } else {
-        console.warn('WhatsApp link element not found');
     }
-    
+
     // Create Email link
-    const emailSubject = `Inquiry about ${design.title} Design - ${BUSINESS_NAME}`;
-    const emailBody = `Hello ${BUSINESS_NAME} Team,\n\nI'm interested in your "${design.title}" design.\n\nDesign Details:\n• Title: ${design.title}\n• Category: ${design.category || 'Interior Design'}\n• Description: ${design.description || 'No description available'}\n\nPlease provide me with more information about:\n1. Detailed specifications\n2. Pricing information\n3. Timeline for completion\n4. Any similar projects you've done\n\nThank you for your assistance.\n\nBest regards,\n[Your Name]`;
+    const emailSubject = `Inquiry about Design ${designRef} - ${BUSINESS_NAME}`;
+    const emailBody = `Hello ${BUSINESS_NAME} Team,\n\nI'm interested in design card ${designRef}.\n\nDesign Details:\n- Card Number: ${designRef}\n- Title: ${design.title}\n- Description: ${design.description || 'No description available'}\n\nPlease provide me with more information about:\n1. Detailed specifications\n2. Pricing information\n3. Timeline for completion\n4. Any similar projects you've done\n\nThank you for your assistance.\n\nBest regards,\n[Your Name]`;
     if (emailLink) {
         emailLink.href = `mailto:${BUSINESS_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
     }
-    
+
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
-    
-    // Prevent click inside modal from closing it
-    const modalContent = modal.querySelector('.modal-content');
-    if (modalContent) {
-        modalContent.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-    }
 }
 
 // Close Modal
@@ -567,37 +583,17 @@ function setupCloseButtonListeners() {
     
     // Close Modal when clicking outside content
     if (modal) {
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
+
         window.addEventListener('click', (e) => {
             if (e.target === modal) {
                 closeModal();
             }
-        });
-    }
-}
-
-// Attach WhatsApp and Email link handlers AFTER modal is created
-function attachModalLinkHandlers() {
-    if (whatsappLink) {
-        // Remove any existing listeners to prevent duplicates
-        const newWhatsappLink = whatsappLink.cloneNode(true);
-        whatsappLink.parentNode.replaceChild(newWhatsappLink, whatsappLink);
-        whatsappLink = newWhatsappLink;
-        
-        whatsappLink.addEventListener('click', function(e) {
-            // Let the link navigate normally
-            console.log('WhatsApp button clicked:', this.href);
-        });
-    }
-    
-    if (emailLink) {
-        // Remove any existing listeners to prevent duplicates
-        const newEmailLink = emailLink.cloneNode(true);
-        emailLink.parentNode.replaceChild(newEmailLink, emailLink);
-        emailLink = newEmailLink;
-        
-        emailLink.addEventListener('click', function(e) {
-            // Let the link navigate normally
-            console.log('Email button clicked:', this.href);
         });
     }
 }
@@ -616,7 +612,7 @@ function initializeContactForm() {
             const message = document.getElementById('message').value;
             
             // Create WhatsApp message
-            const whatsappMessage = `Hello ${BUSINESS_NAME}!\n\nNew Contact Inquiry:\n\n• Name: ${name || 'Not provided'}\n• Email: ${email || 'Not provided'}\n• Phone: ${phone || 'Not provided'}\n• Message: ${message || 'No message provided'}\n\nThis inquiry was submitted through your website.`;
+            const whatsappMessage = `Hello ${BUSINESS_NAME}!\n\nNew Contact Inquiry:\n\n- Name: ${name || 'Not provided'}\n- Email: ${email || 'Not provided'}\n- Phone: ${phone || 'Not provided'}\n- Message: ${message || 'No message provided'}\n\nThis inquiry was submitted through your website.`;
             
             // Open WhatsApp with pre-filled message
             window.open(getWhatsAppUrl(whatsappMessage), '_blank');
@@ -716,3 +712,7 @@ if ('IntersectionObserver' in window) {
 
 // Add touch events for mobile
 document.addEventListener('touchstart', function() {}, {passive: true});
+
+
+
+
